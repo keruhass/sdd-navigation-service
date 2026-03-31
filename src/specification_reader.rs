@@ -6,6 +6,7 @@ use std::{
 
 use crate::models::SpecMap;
 
+//@req REQ-005
 pub fn scan_file(path: &Path, map: &mut SpecMap) -> std::io::Result<()> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
