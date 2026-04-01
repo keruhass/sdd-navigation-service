@@ -11,3 +11,4 @@ anyhow = "1.0.100"
 walkdir = "2.5.0"
 regex = "1.12.3"
 pulldown-cmark = "0.13.3"
+serde = {version = "1.0.228", features = ["derive"]}

@@ -1,5 +1,10 @@
-use axum::Json;
+use std::sync::Arc;
 
-pub async fn get_analysis() -> anyhow::Result<()> {
-    Ok(())
+use axum::{extract::State, Json};
+
+use crate::{models::Analysis, state::AppState};
+
+pub async fn get_analysis(State(state): State<Arc<AppState>>) -> Json<Analysis> {
+    let response = state.analysis.clone();
+    Json(response)
 }
