@@ -8,7 +8,6 @@ use dashmap::DashMap;
 
 use crate::models::SpecMap;
 
-//@req REQ-005
 pub fn scan_file(path: &Path) -> std::io::Result<SpecMap> {
     let map: SpecMap = DashMap::new();
     let file = File::open(path)?;

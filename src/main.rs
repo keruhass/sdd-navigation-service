@@ -1,5 +1,6 @@
 mod analysis;
 mod handlers;
+mod input;
 mod models;
 mod parser;
 mod routes;
@@ -10,19 +11,17 @@ mod state;
 use axum::Router;
 use std::{path::Path, sync::Arc};
 
-use crate::{analysis::data_analysis, routes::router};
+use crate::{analysis::data_analysis, input::path_input, routes::router};
 use state::AppState;
 
-//@req REQ-001
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let doc_path: &Path = Path::new("src/test.md");
-    let project_path: &Path = Path::new("./");
+    let doc_path = path_input();
+    let project_path = path_input();
 
-    let data = data_analysis(project_path, doc_path)?;
+    let data = data_analysis(Path::new(&project_path), Path::new(&doc_path))?;
 
     let state = Arc::new(AppState { analysis: data });
-    // println!("\n{:#?}", analysis);
 
     let app = Router::new().nest("/api", router()).with_state(state);
 

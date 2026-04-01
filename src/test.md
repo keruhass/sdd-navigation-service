@@ -1,7 +1,6 @@
 REQ-001
-Registration
+Comparison of specifications
 REQ-002
-Login
+Handler for viewing the matching results
 REQ-003
-REQ-004
-User find
+Endpoint for viewing the mathing results
