@@ -4,10 +4,13 @@ use std::{
     path::Path,
 };
 
+use dashmap::DashMap;
+
 use crate::models::SpecMap;
 
 //@req REQ-005
-pub fn scan_file(path: &Path, map: &mut SpecMap) -> std::io::Result<()> {
+pub fn scan_file(path: &Path) -> std::io::Result<SpecMap> {
+    let map: SpecMap = DashMap::new();
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 
@@ -41,5 +44,5 @@ pub fn scan_file(path: &Path, map: &mut SpecMap) -> std::io::Result<()> {
         eprintln!("Line {} doesn't have a description at EOF. REQ: {}", i, req);
     }
 
-    Ok(())
+    Ok(map)
 }

@@ -1,3 +1,5 @@
+mod analysis;
+mod handlers;
 mod models;
 mod parser;
 mod scanner;
@@ -5,51 +7,16 @@ mod specification_reader;
 
 use std::path::Path;
 
-use dashmap::DashMap;
-
-use crate::models::{Analysis, SpecMap};
-use crate::scanner::scan_project;
-use crate::specification_reader::scan_file;
+use crate::analysis::data_analysis;
+use axum::Router;
 
 //@req REQ-001
-fn main() -> std::io::Result<()> {
-    let mut analysis = Analysis {
-        covered: Vec::new(),
-        uncovered: Vec::new(),
-        unknown: Vec::new(),
-    };
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let doc_path: &Path = Path::new("src/test.md");
+    let project_path: &Path = Path::new("./");
 
-    let path: &Path = Path::new("src/test.md");
-    let mut map: SpecMap = DashMap::new();
-
-    scan_file(path, &mut map)?;
-
-    for entry in map.iter() {
-        println!("{}, {}", entry.key(), entry.value());
-    }
-
-    println!("Reqs in docs:");
-
-    let doc_map = scan_project("./");
-
-    for entry in doc_map.iter() {
-        println!("{}, \n{:#?}", entry.key(), entry.value());
-    }
-
-    for entry in map.iter() {
-        let key = entry.key();
-        if doc_map.contains_key(key) {
-            analysis.covered.push(key.clone());
-        } else {
-            analysis.uncovered.push(key.clone());
-        }
-    }
-    for entry in doc_map.iter() {
-        let key = entry.key();
-        if !map.contains_key(key) {
-            analysis.unknown.push(key.clone());
-        }
-    }
+    let analysis = data_analysis(project_path, doc_path);
 
     println!("\n{:#?}", analysis);
 

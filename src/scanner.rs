@@ -9,7 +9,7 @@ use std::{
 use walkdir::WalkDir;
 
 pub fn scan_project<P: AsRef<Path>>(root: P) -> ReqMap {
-    let mut map: ReqMap = DashMap::new();
+    let map: ReqMap = DashMap::new();
 
     for entry in WalkDir::new(root)
         .into_iter()
@@ -22,7 +22,7 @@ pub fn scan_project<P: AsRef<Path>>(root: P) -> ReqMap {
             continue;
         }
 
-        if let Err(err) = scan_file(path, &mut map) {
+        if let Err(err) = scan_file(path, &map) {
             eprintln!("Failed to scan {:?}: {}", path, err);
         }
     }
@@ -30,7 +30,7 @@ pub fn scan_project<P: AsRef<Path>>(root: P) -> ReqMap {
     map
 }
 
-pub fn scan_file(path: &Path, map: &mut ReqMap) -> std::io::Result<()> {
+pub fn scan_file(path: &Path, map: &ReqMap) -> std::io::Result<()> {
     let file = File::open(&path)?;
     let reader = BufReader::new(file);
 
