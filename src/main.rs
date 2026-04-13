@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let doc_path = path_input();
     let project_path = path_input();
 
-    let data = data_analysis(Path::new(&project_path), Path::new(&doc_path))?;
+    let data = data_analysis(Path::new(&project_path), Path::new(&doc_path)).await?;
 
     let state = Arc::new(AppState { analysis: data });
 

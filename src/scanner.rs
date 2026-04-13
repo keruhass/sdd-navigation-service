@@ -1,41 +1,53 @@
 use crate::models::{Location, ReqMap};
 use crate::parser::{extract_req, is_valid_req};
 use dashmap::DashMap;
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-    path::Path,
-};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::fs::File;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::task::JoinHandle;
 use walkdir::WalkDir;
 
-pub fn scan_project<P: AsRef<Path>>(root: P) -> ReqMap {
-    let map: ReqMap = DashMap::new();
+pub async fn scan_project<P: AsRef<Path>>(root: P) -> anyhow::Result<Arc<ReqMap>> {
+    let map: Arc<ReqMap> = Arc::new(DashMap::new());
+    let mut handles: Vec<JoinHandle<()>> = Vec::new();
 
     for entry in WalkDir::new(root)
         .into_iter()
         .filter_map(Result::ok)
         .filter(|e| e.file_type().is_file())
     {
-        let path = entry.path();
-
-        if !is_code_file(path) {
+        let path = entry.into_path();
+        let map = map.clone();
+        if !is_code_file(&path) {
             continue;
         }
 
-        if let Err(err) = scan_file(path, &map) {
-            eprintln!("Failed to scan {:?}: {}", path, err);
-        }
+        let handle = tokio::spawn(async move {
+            if let Err(err) = scan_file(path, map).await {
+                eprintln!("An error has occured while reading the file: {}", err);
+            }
+        });
+
+        handles.push(handle);
     }
 
-    map
+    for handle in handles {
+        handle.await?;
+    }
+
+    Ok(map)
 }
 
-pub fn scan_file(path: &Path, map: &ReqMap) -> std::io::Result<()> {
-    let file = File::open(&path)?;
+async fn scan_file(path: PathBuf, map: Arc<ReqMap>) -> std::io::Result<()> {
+    let file = File::open(&path).await?;
     let reader = BufReader::new(file);
+    let mut lines = reader.lines();
 
-    for (i, line) in reader.lines().enumerate() {
-        let line: &str = &line?;
+    let mut line_index = 0;
+
+    while let Some(line) = lines.next_line().await? {
+        let line = line.as_str();
         let req = extract_req(line);
 
         if let Some(s) = path.to_str() {
@@ -43,7 +55,7 @@ pub fn scan_file(path: &Path, map: &ReqMap) -> std::io::Result<()> {
 
             let location = Location {
                 file: path_str.clone(),
-                line: i,
+                line: line_index,
             };
 
             if let Some(req) = req {
@@ -52,17 +64,19 @@ pub fn scan_file(path: &Path, map: &ReqMap) -> std::io::Result<()> {
                 } else {
                     eprintln!(
                     "Annotation has wrong format. File: {}, line: {}.\nPlease, use the right format of the annotations: 'REQ-[number]'.",
-                    &path_str, i
+                    &path_str, line_index
                     )
                 }
             }
         }
+
+        line_index += 1;
     }
 
     Ok(())
 }
 
-fn is_code_file(path: &Path) -> bool {
+fn is_code_file(path: &PathBuf) -> bool {
     match path.extension().and_then(|s| s.to_str()) {
         Some(ext) => matches!(ext, "rs" | "ts" | "js" | "py"),
         None => false,
