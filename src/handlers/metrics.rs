@@ -6,6 +6,6 @@ use crate::{models::Analysis, state::AppState};
 
 //@req REQ-002
 pub async fn get_analysis(State(state): State<Arc<AppState>>) -> Json<Analysis> {
-    let response = state.analysis.clone();
-    Json(response)
+    let response = state.analysis.read().await;
+    Json(response.clone())
 }
